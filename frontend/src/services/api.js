@@ -2,7 +2,14 @@ const API_BASE = '/api';
 
 export async function transcribeAudio(audioBlob, language = 'hi-IN') {
   const formData = new FormData();
-  formData.append('audio', audioBlob, 'recording.webm');
+  // Ensure the appropriate extension matches the blob MIME type
+  const filename = audioBlob.type?.includes('wav')
+    ? 'recording.wav'
+    : audioBlob.type?.includes('mp3')
+    ? 'recording.mp3'
+    : 'recording.webm';
+
+  formData.append('audio', audioBlob, filename);
   formData.append('language', language);
 
   const res = await fetch(`${API_BASE}/ai/transcribe`, {

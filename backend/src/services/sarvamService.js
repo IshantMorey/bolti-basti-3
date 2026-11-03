@@ -15,15 +15,26 @@ function getApiKey() {
  * @param {string} filename e.g. audio.webm
  * @param {string} languageCode e.g. 'mr-IN', 'hi-IN', 'en-IN', or 'unknown'
  */
-async function transcribeAudio(fileBuffer, mimeType = 'audio/webm', filename = 'recording.webm', languageCode = 'unknown') {
+async function transcribeAudio(fileBuffer, mimeType = 'audio/wav', filename = 'recording.wav', languageCode = 'unknown') {
   const apiKey = getApiKey();
   const formData = new FormData();
+
+  // Determine appropriate input_audio_codec for Sarvam Saaras v4
+  let codec = 'wav';
+  if (filename.endsWith('.mp3') || mimeType.includes('mp3')) codec = 'mp3';
+  else if (filename.endsWith('.webm') || mimeType.includes('webm')) codec = 'webm';
+  else if (filename.endsWith('.wav') || mimeType.includes('wav')) codec = 'wav';
+  else if (filename.endsWith('.ogg') || mimeType.includes('ogg')) codec = 'ogg';
+  else if (filename.endsWith('.flac') || mimeType.includes('flac')) codec = 'flac';
+
+  console.log(`[STT Request] Audio buffer: ${fileBuffer.length} bytes, format: ${codec}, filename: ${filename}, language: ${languageCode}`);
 
   const blob = new Blob([fileBuffer], { type: mimeType });
   formData.append('file', blob, filename);
   formData.append('model', 'saaras:v4');
   formData.append('mode', 'transcribe');
   formData.append('language_code', languageCode || 'unknown');
+  formData.append('input_audio_codec', codec);
 
   const response = await fetch(`${SARVAM_BASE_URL}/speech-to-text`, {
     method: 'POST',
@@ -35,10 +46,12 @@ async function transcribeAudio(fileBuffer, mimeType = 'audio/webm', filename = '
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error(`[STT Error] Status ${response.status}:`, errorText);
     throw new Error(`Sarvam STT failed (${response.status}): ${errorText}`);
   }
 
   const data = await response.json();
+  console.log(`[STT Success] Detected transcript: "${data.transcript}" (Language: ${data.language_code || languageCode})`);
   return {
     transcript: data.transcript || '',
     detectedLanguage: data.language_code || languageCode
