@@ -47,10 +47,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`========================================`);
-  console.log(` Bolti Basti Backend running on port ${PORT}`);
-  console.log(` Health check: http://localhost:${PORT}/api/health`);
-  console.log(`========================================`);
-});
+// Export for Vercel Serverless Function
+module.exports = app;
+
+// Start server if run directly (local development)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`========================================`);
+    console.log(` Bolti Basti Backend running on port ${PORT}`);
+    console.log(` Health check: http://localhost:${PORT}/api/health`);
+    console.log(`========================================`);
+  });
+}
